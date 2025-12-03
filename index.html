@@ -41,6 +41,9 @@
       display:flex;align-items:center;justify-content:center;font-weight:900;font-size:40px;color:var(--num);
       background:transparent;padding:4px 8px;
     }
+    /* ألوان عرض النتيجة (صحيحة/خاطئة) */
+    .answer-display.correct { color: var(--success); }
+    .answer-display.wrong { color: var(--softDanger); }
 
     .msg{min-height:44px;font-weight:800;text-align:center;color:var(--muted);white-space:pre-line;line-height:1.2}
     .msg.error{color:var(--softDanger)}
@@ -66,6 +69,7 @@
     .key.empty{ background:transparent; border:none; cursor:default; }
     .key:active{ transform: scale(.98); }
     .key.disabled{ opacity:0.55; pointer-events:none; }
+    .key.selected{ transform: scale(1.04); box-shadow: 0 6px 14px rgba(0,0,0,0.4); }
 
     .controls-row{
       display:flex;
@@ -146,7 +150,7 @@
       </div>
 
       <div class="controls-row" id="controlsRow">
-        <!-- لم يعد هناك زر تحقق أو مسح -->
+        <!-- لا يوجد زر تحقق أو مسح -->
       </div>
 
       <div class="result-box" id="resultBox">
@@ -182,6 +186,11 @@
 
     function rand1to10(){ return Math.floor(Math.random()*10) + 1; }
 
+    function clearAnswerDisplayClasses(){
+      answerDisplay.classList.remove('correct','wrong');
+      answerDisplay.textContent = '';
+    }
+
     function newQuestion(){
       accepting = true;
       message.textContent = '';
@@ -189,6 +198,7 @@
       keypad.querySelectorAll('.key').forEach(k => k.classList.remove('disabled','selected'));
       keypad.style.pointerEvents = 'auto';
       topScore.style.visibility = 'visible';
+      clearAnswerDisplayClasses();
 
       // نولد أرقامًا 1..10 لكلتا الرقمتين
       // نكرر حتى يكون الناتج ضمن 1..10
@@ -221,9 +231,9 @@
       opSym.classList.add(op === 'add' ? 'add' : 'sub');
 
       eqSym.textContent = '=';
-      answerDisplay.textContent = '';
     }
 
+    // confetti (exact)
     function showConfetti(){
       const colors = ['#e91e63', '#ffeb3b', '#4caf50', '#2196f3', '#ff9800', '#9c27b0'];
       const count = 50;
@@ -266,9 +276,12 @@
       const val = parseInt(key, 10);
       if (isNaN(val)) return;
 
-      // تحقق الإجابة
-      if (!current) return;
+      // قبل التحقق: أظهر الإجابة الصحيحة في المربع بجانب =
+      clearAnswerDisplayClasses();
+      answerDisplay.textContent = String(current.correct);
+      // ضع اللون الملائم ثم قم بالتحقق
       if (val === current.correct){
+        answerDisplay.classList.add('correct');
         score += 1;
         topScore.textContent = 'نقاطك ' + score;
         message.classList.remove('error');
@@ -278,7 +291,7 @@
         // بعد تأخير صغير نمشي للسؤال التالي
         setTimeout(newQuestion, 1000);
       } else {
-        // إجابة خاطئة -> إظهار النتيجة (نفس سلوك سابق)
+        answerDisplay.classList.add('wrong');
         message.classList.add('error');
         message.textContent = 'الإجابة الصحيحة هي ' + current.correct;
         bigScore.textContent = 'نقاطك ' + score;
@@ -298,6 +311,7 @@
       keypad.style.pointerEvents = 'auto';
       accepting = true;
       keypad.querySelectorAll('.key').forEach(k => k.classList.remove('disabled','selected'));
+      clearAnswerDisplayClasses();
       newQuestion();
       doVibrate();
     });
