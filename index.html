@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="ar">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>لعبة الرياضيات - للأطفال</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --panel:#0e1724;
+      --muted:#9aa4b2;
+      --accent:#FFFF99;
+      --num:#ffffff;
+      --key:#15202b;
+      --key-border:#26313b;
+      --key-text:#ffffff;
+      --success:#16a34a;
+      --softDanger:#ff8888;
+      --resetColor:#1f9fff;
+    }
+    html,body{height:100%;margin:0;font-family:Arial, "Noto Naskh Arabic", sans-serif;background:var(--bg);color:var(--num);direction:rtl}
+    .page{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:10px 12px;box-sizing:border-box}
+    .top-row{width:100%;max-width:480px;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px} /* تم المحاذاة للوسط */
+    .score{font-weight:900;font-size:20px;color:var(--num);text-align:center;width:100%} /* نص في الوسط */
+    .card{width:100%;max-width:480px;background:var(--panel);border-radius:12px;padding:16px 16px;box-sizing:border-box;display:flex;flex-direction:column;align-items:stretch;gap:10px}
+    .question-row{display:flex;align-items:center;justify-content:center;gap:10px;direction:ltr}
+    .num{font-size:40px;font-weight:900;color:var(--num);min-width:56px;text-align:center}
+    .op{font-size:40px;font-weight:900;color:var(--accent);min-width:36px;text-align:center}
+    .equals{font-size:40px;font-weight:900;color:var(--accent);min-width:36px;text-align:center}
+    .answer-display{
+      min-width:72px;height:56px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);
+      display:flex;align-items:center;justify-content:center;font-weight:900;font-size:40px;color:var(--num);
+      background:transparent;padding:4px 8px;
+    }
+    .msg{min-height:44px;font-weight:800;text-align:center;color:var(--muted);white-space:pre-line;line-height:1.2}
+    .msg.error{color:var(--softDanger)}
+    .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px;direction:ltr}
+    .key{
+      background:var(--key);
+      border:1px solid var(--key-border);
+      height:56px;
+      padding:0;
+      border-radius:10px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      font-weight:900;
+      font-size:18px;
+      color:var(--key-text);
+      cursor:pointer;
+      user-select:none;
+      box-sizing:border-box;
+    }
+    .key.empty{ background:transparent; border:none; cursor:default; } /* خلية فارغة لتوسيط الأزرار */
+    .controls-row{
+      display:flex;
+      gap:8px;
+      justify-content:center;
+      margin-top:8px;
+      width:100%;
+      box-sizing:border-box;
+    }
+    .btn-check{
+      width: calc((100% - 16px) / 3);
+      height:56px;
+      padding:0;
+      border-radius:10px;
+      border:0;
+      background:#1f9fff;
+      color:#ffffff;
+      font-weight:900;
+      cursor:pointer;
+      font-size:18px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .btn-check:disabled{opacity:0.6;cursor:default}
+    .btn-reset{padding:12px 18px;border-radius:10px;border:0;background:var(--resetColor);color:white;font-weight:900;cursor:pointer}
+    .result-box{display:none;flex-direction:column;align-items:center;gap:10px}
+    .big-score{font-size:28px;font-weight:900;color:var(--num)}
+    .footer{width:100%;max-width:480px;text-align:center;padding:8px 0;color:var(--muted);font-weight:700}
+    @media (max-height:620px){
+      .card{padding:12px}
+      .num{font-size:34px}
+      .op,.equals{font-size:34px}
+      .answer-display{min-width:56px;height:48px;font-size:34px}
+      .key{height:48px;padding:0;font-size:16px}
+      .btn-check{padding:12px 18px;font-size:16px}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="top-row">
+      <div class="score" id="topScore">نقاطك 0</div>
+    </div>
+
+    <div class="card" id="card">
+      <div class="question-row" id="questionRow" aria-live="polite">
+        <div class="num" id="leftNum">—</div>
+        <div class="op" id="opSym">+</div>
+        <div class="num" id="rightNum">—</div>
+        <div class="equals" id="eqSym">=</div>
+        <div class="answer-display" id="answerDisplay" aria-label="حقل الإجابة" aria-readonly="true"></div>
+      </div>
+
+      <div class="msg" id="message" aria-live="assertive"></div>
+
+      <div class="keypad" id="keypad" role="application" aria-label="لوحة الأرقام">
+        <div class="key" data-key="1">1</div>
+        <div class="key" data-key="2">2</div>
+        <div class="key" data-key="3">3</div>
+
+        <div class="key" data-key="4">4</div>
+        <div class="key" data-key="5">5</div>
+        <div class="key" data-key="6">6</div>
+
+        <div class="key" data-key="7">7</div>
+        <div class="key" data-key="8">8</div>
+        <div class="key" data-key="9">9</div>
+
+        <div class="key empty"></div> <!-- خلية فارغة على اليسار -->
+        <div class="key" data-key="0">0</div>
+        <div class="key" data-key="clear">مسح</div> <!-- زر المسح على اليمين -->
+      </div>
+
+      <div class="controls-row" id="controlsRow">
+        <button class="btn-check" id="checkBtn">تحقق</button>
+      </div>
+
+      <div class="result-box" id="resultBox">
+        <div class="big-score" id="bigScore">نقاطك 0</div>
+        <button class="btn-reset" id="resetBtn">اعادة اللعبة</button>
+      </div>
+    </div>
+
+    <div class="footer">اعداد الاستاذ علي حسين</div>
+  </div>
+
+  <script>
+    const topScore = document.getElementById('topScore');
+    const leftNum = document.getElementById('leftNum');
+    const rightNum = document.getElementById('rightNum');
+    const opSym = document.getElementById('opSym');
+    const eqSym = document.getElementById('eqSym');
+    const answerDisplay = document.getElementById('answerDisplay');
+    const message = document.getElementById('message');
+    const keypad = document.getElementById('keypad');
+    const checkBtn = document.getElementById('checkBtn');
+    const resultBox = document.getElementById('resultBox');
+    const bigScore = document.getElementById('bigScore');
+    const resetBtn = document.getElementById('resetBtn');
+
+    let score = 0;
+    let current = null;
+    let inputVal = "";
+
+    function doVibrate(){
+      if (navigator.vibrate){ try{ navigator.vibrate(30); }catch(e){} }
+    }
+
+    function rand1to20(){ return Math.floor(Math.random()*20) + 1; }
+
+    function newQuestion(){
+      inputVal = "";
+      updateDisplay();
+      message.textContent = '';
+      resultBox.style.display = 'none';
+      keypad.style.display = 'grid';
+      checkBtn.style.display = 'inline-block';
+      checkBtn.disabled = false;
+      keypad.style.pointerEvents = 'auto';
+      topScore.style.visibility = 'visible';
+
+      // generate until result in 1..20 AND at least one operand < 10
+      let a,b,op,correct;
+      do {
+        op = Math.random() < 0.5 ? 'add' : 'sub';
+        a = rand1to20();
+        b = rand1to20();
+        correct = (op === 'add') ? (a + b) : (a - b);
+      } while (correct < 1 || correct > 20 || !(a < 10 || b < 10));
+
+      current = { type: 'arith', a, b, op, correct };
+
+      leftNum.setAttribute('dir','ltr');
+      rightNum.setAttribute('dir','ltr');
+
+      leftNum.textContent = String(a);
+      rightNum.textContent = String(b);
+      opSym.textContent = (op === 'add' ? '+' : '−');
+      eqSym.textContent = '=';
+    }
+
+    function updateDisplay(){
+      answerDisplay.textContent = inputVal === "" ? "" : inputVal;
+    }
+
+    keypad.addEventListener('click', function(e){
+      const k = e.target.closest('.key');
+      if (!k) return;
+      const key = k.dataset.key;
+      if (!key) return;
+      doVibrate();
+      if (checkBtn.disabled) return;
+      if (/^[0-9]$/.test(key)){
+        // limit: up to 2 digits (1..20)
+        if (inputVal.length >= 2) return;
+        // prevent leading zero
+        if (inputVal === "0") inputVal = key;
+        else inputVal += key;
+        updateDisplay();
+      } else if (key === 'clear'){
+        inputVal = "";
+        updateDisplay();
+        message.textContent = '';
+        if (keypad.style.display === 'none'){
+          keypad.style.display = 'grid';
+          resultBox.style.display = 'none';
+          checkBtn.style.display = 'inline-block';
+        }
+      }
+    });
+
+    function getInputNumber(){
+      if (inputVal.length === 0) return null;
+      const v = parseInt(inputVal, 10);
+      if (isNaN(v)) return null;
+      return v;
+    }
+
+    checkBtn.addEventListener('click', function(){
+      if (checkBtn.disabled) return;
+      const val = getInputNumber();
+      if (val === null){
+        message.classList.remove('error');
+        message.textContent = 'اكتب الناتج أولاً (من 1 إلى 20).';
+        return;
+      }
+      if (val < 1 || val > 20){
+        message.classList.add('error');
+        message.textContent = 'الرجاء إدخال عدد من 1 إلى 20 فقط.';
+        return;
+      }
+      if (!current) return;
+
+      if (val === current.correct){
+        score += 1;
+        topScore.textContent = 'نقاطك ' + score;
+        message.classList.remove('error');
+        message.textContent = 'اجابتك صحيحة ✅';
+        checkBtn.disabled = true;
+        keypad.style.pointerEvents = 'none';
+        setTimeout(newQuestion, 900);
+      } else {
+        keypad.style.display = 'none';
+        message.classList.add('error');
+        message.textContent = 'الإجابة الصحيحة هي ' + current.correct;
+        bigScore.textContent = 'نقاطك ' + score;
+        resultBox.style.display = 'flex';
+        checkBtn.style.display = 'none';
+        topScore.style.visibility = 'hidden';
+      }
+    });
+
+    resetBtn.addEventListener('click', function(){
+      score = 0;
+      topScore.textContent = 'نقاطك ' + score;
+      topScore.style.visibility = 'visible';
+      message.textContent = '';
+      resultBox.style.display = 'none';
+      keypad.style.display = 'grid';
+      checkBtn.style.display = 'inline-block';
+      checkBtn.disabled = false;
+      keypad.style.pointerEvents = 'auto';
+      inputVal = "";
+      updateDisplay();
+      newQuestion();
+      doVibrate();
+    });
+
+    // start
+    newQuestion();
+    document.addEventListener('touchstart', ()=>{}, {passive:true});
+  </script>
+</body>
+</html>
