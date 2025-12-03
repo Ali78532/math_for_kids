@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>لعبة الرياضيات - للأطفال</title>
+  <title>برنامج الرياضيات للاطفال</title>
   <style>
     :root{
       --bg:#0b1220;
@@ -17,23 +17,34 @@
       --success:#16a34a;
       --softDanger:#ff8888;
       --resetColor:#1f9fff;
+      --plus-color:#38bdf8; /* سمائي */
+      --minus-color:#f472b6; /* وردي */
     }
+
     html,body{height:100%;margin:0;font-family:Arial, "Noto Naskh Arabic", sans-serif;background:var(--bg);color:var(--num);direction:rtl}
-    .page{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:10px 12px;box-sizing:border-box}
-    .top-row{width:100%;max-width:480px;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px} /* تم المحاذاة للوسط */
-    .score{font-weight:900;font-size:20px;color:var(--num);text-align:center;width:100%} /* نص في الوسط */
-    .card{width:100%;max-width:480px;background:var(--panel);border-radius:12px;padding:16px 16px;box-sizing:border-box;display:flex;flex-direction:column;align-items:stretch;gap:10px}
+    .page{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:18px;box-sizing:border-box}
+    
+    .top-row{width:100%;max-width:480px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;gap:8px}
+    .score{font-weight:900;font-size:20px;color:var(--num);text-align:center;width:100%}
+
+    .card{width:100%;max-width:480px;background:var(--panel);border-radius:12px;padding:16px 16px;box-sizing:border-box;display:flex;flex-direction:column;align-items:stretch;gap:10px;position:relative;overflow:hidden}
+    
     .question-row{display:flex;align-items:center;justify-content:center;gap:10px;direction:ltr}
     .num{font-size:40px;font-weight:900;color:var(--num);min-width:56px;text-align:center}
-    .op{font-size:40px;font-weight:900;color:var(--accent);min-width:36px;text-align:center}
+    .op{font-size:40px;font-weight:900;min-width:36px;text-align:center}
+    .op.add{ color: var(--plus-color); }
+    .op.sub{ color: var(--minus-color); }
     .equals{font-size:40px;font-weight:900;color:var(--accent);min-width:36px;text-align:center}
+    
     .answer-display{
-      min-width:72px;height:56px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);
+      min-width:72px;height:56px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);
       display:flex;align-items:center;justify-content:center;font-weight:900;font-size:40px;color:var(--num);
       background:transparent;padding:4px 8px;
     }
+
     .msg{min-height:44px;font-weight:800;text-align:center;color:var(--muted);white-space:pre-line;line-height:1.2}
     .msg.error{color:var(--softDanger)}
+
     .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px;direction:ltr}
     .key{
       background:var(--key);
@@ -52,7 +63,10 @@
       user-select:none;
       box-sizing:border-box;
     }
-    .key.empty{ background:transparent; border:none; cursor:default; } /* خلية فارغة لتوسيط الأزرار */
+    .key.empty{ background:transparent; border:none; cursor:default; }
+    .key:active{ transform: scale(.98); }
+    .key.disabled{ opacity:0.55; pointer-events:none; }
+
     .controls-row{
       display:flex;
       gap:8px;
@@ -61,33 +75,38 @@
       width:100%;
       box-sizing:border-box;
     }
-    .btn-check{
-      width: calc((100% - 16px) / 3);
-      height:56px;
-      padding:0;
-      border-radius:10px;
-      border:0;
-      background:#1f9fff;
-      color:#ffffff;
-      font-weight:900;
-      cursor:pointer;
-      font-size:18px;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-    }
-    .btn-check:disabled{opacity:0.6;cursor:default}
-    .btn-reset{padding:12px 18px;border-radius:10px;border:0;background:var(--resetColor);color:white;font-weight:900;cursor:pointer}
+
     .result-box{display:none;flex-direction:column;align-items:center;gap:10px}
     .big-score{font-size:28px;font-weight:900;color:var(--num)}
-    .footer{width:100%;max-width:480px;text-align:center;padding:8px 0;color:var(--muted);font-weight:700}
+    .btn-reset{padding:12px 18px;border-radius:10px;border:0;background:var(--resetColor);color:white;font-weight:900;cursor:pointer}
+
+    .footer{width:100%;max-width:480px;text-align:center;padding:8px 0;color:var(--muted);font-weight:700;margin:18px auto 0}
+
     @media (max-height:620px){
       .card{padding:12px}
       .num{font-size:34px}
       .op,.equals{font-size:34px}
       .answer-display{min-width:56px;height:48px;font-size:34px}
       .key{height:48px;padding:0;font-size:16px}
-      .btn-check{padding:12px 18px;font-size:16px}
+    }
+
+    /* confetti exact code */
+    @keyframes confetti-fall {
+      0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+      1% { opacity: var(--o, 0.9); }
+      100% { transform: translate(var(--dx), var(--dy)) rotate(calc(var(--r) * 1deg)); opacity: var(--o, 0.9); }
+    }
+
+    .confetti {
+      position: fixed;
+      width: var(--w, 8px);
+      height: var(--h, 8px);
+      background-color: var(--bg, red);
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(0, 0) rotate(0deg);
+      animation: confetti-fall var(--dur) ease-out forwards;
+      z-index: 200;
     }
   </style>
 </head>
@@ -97,8 +116,8 @@
       <div class="score" id="topScore">نقاطك 0</div>
     </div>
 
-    <div class="card" id="card">
-      <div class="question-row" id="questionRow" aria-live="polite">
+    <div class="card" id="card" aria-live="polite">
+      <div class="question-row" id="questionRow" aria-hidden="false">
         <div class="num" id="leftNum">—</div>
         <div class="op" id="opSym">+</div>
         <div class="num" id="rightNum">—</div>
@@ -121,13 +140,13 @@
         <div class="key" data-key="8">8</div>
         <div class="key" data-key="9">9</div>
 
-        <div class="key empty"></div> <!-- خلية فارغة على اليسار -->
-        <div class="key" data-key="0">0</div>
-        <div class="key" data-key="clear">مسح</div> <!-- زر المسح على اليمين -->
+        <div class="key empty"></div>
+        <div class="key" data-key="10">10</div>
+        <div class="key empty"></div>
       </div>
 
       <div class="controls-row" id="controlsRow">
-        <button class="btn-check" id="checkBtn">تحقق</button>
+        <!-- لم يعد هناك زر تحقق أو مسح -->
       </div>
 
       <div class="result-box" id="resultBox">
@@ -148,119 +167,124 @@
     const answerDisplay = document.getElementById('answerDisplay');
     const message = document.getElementById('message');
     const keypad = document.getElementById('keypad');
-    const checkBtn = document.getElementById('checkBtn');
     const resultBox = document.getElementById('resultBox');
     const bigScore = document.getElementById('bigScore');
     const resetBtn = document.getElementById('resetBtn');
+    const card = document.getElementById('card');
 
     let score = 0;
     let current = null;
-    let inputVal = "";
+    let accepting = true; // يقفل بعد الضغط حتى يتم الانتقال للسؤال التالي
 
     function doVibrate(){
       if (navigator.vibrate){ try{ navigator.vibrate(30); }catch(e){} }
     }
 
-    function rand1to20(){ return Math.floor(Math.random()*20) + 1; }
+    function rand1to10(){ return Math.floor(Math.random()*10) + 1; }
 
     function newQuestion(){
-      inputVal = "";
-      updateDisplay();
+      accepting = true;
       message.textContent = '';
       resultBox.style.display = 'none';
-      keypad.style.display = 'grid';
-      checkBtn.style.display = 'inline-block';
-      checkBtn.disabled = false;
+      keypad.querySelectorAll('.key').forEach(k => k.classList.remove('disabled','selected'));
       keypad.style.pointerEvents = 'auto';
       topScore.style.visibility = 'visible';
 
-      // generate until result in 1..20 AND at least one operand < 10
+      // نولد أرقامًا 1..10 لكلتا الرقمتين
+      // نكرر حتى يكون الناتج ضمن 1..10
       let a,b,op,correct;
+      let attempts = 0;
       do {
         op = Math.random() < 0.5 ? 'add' : 'sub';
-        a = rand1to20();
-        b = rand1to20();
+        a = rand1to10();
+        b = rand1to10();
         correct = (op === 'add') ? (a + b) : (a - b);
-      } while (correct < 1 || correct > 20 || !(a < 10 || b < 10));
+        attempts++;
+        if (attempts > 200) {
+          if (op === 'sub') {
+            if (a <= b) a = b + 1 <= 10 ? b + 1 : 10;
+            correct = a - b;
+          } else {
+            if (a + b > 10) b = Math.max(1, 10 - a);
+            correct = a + b;
+          }
+        }
+      } while (correct < 1 || correct > 10);
 
-      current = { type: 'arith', a, b, op, correct };
-
-      leftNum.setAttribute('dir','ltr');
-      rightNum.setAttribute('dir','ltr');
+      current = { a, b, op, correct };
 
       leftNum.textContent = String(a);
       rightNum.textContent = String(b);
       opSym.textContent = (op === 'add' ? '+' : '−');
+
+      opSym.classList.remove('add','sub');
+      opSym.classList.add(op === 'add' ? 'add' : 'sub');
+
       eqSym.textContent = '=';
+      answerDisplay.textContent = '';
     }
 
-    function updateDisplay(){
-      answerDisplay.textContent = inputVal === "" ? "" : inputVal;
+    function showConfetti(){
+      const colors = ['#e91e63', '#ffeb3b', '#4caf50', '#2196f3', '#ff9800', '#9c27b0'];
+      const count = 50;
+      for (let i = 0; i < count; i++) {
+        const sq = document.createElement('div');
+        sq.classList.add('confetti');
+        const bg = colors[Math.floor(Math.random() * colors.length)];
+        sq.style.setProperty('--bg', bg);
+        sq.style.setProperty('--o', (0.7 + Math.random() * 0.3));
+        sq.style.setProperty('--w', (6 + Math.random() * 6) + 'px');
+        sq.style.setProperty('--h', (4 + Math.random() * 8) + 'px');
+        sq.style.setProperty('--dx', (Math.random() * 100 - 50) + 'vw');
+        sq.style.setProperty('--dy', window.innerHeight + 200 + 'px');
+        sq.style.setProperty('--r', Math.random() * 720);
+        sq.style.setProperty('--dur', (3 + Math.random() * 2) + 's');
+        sq.style.animationDelay = Math.random() * 2 + 's';
+        sq.style.top = '-10px';
+        sq.style.left = Math.random() * window.innerWidth + 'px';
+        document.body.appendChild(sq);
+        sq.addEventListener('animationend', () => sq.remove());
+      }
     }
 
     keypad.addEventListener('click', function(e){
       const k = e.target.closest('.key');
       if (!k) return;
+      if (k.classList.contains('empty')) return;
+      if (!accepting) return;
       const key = k.dataset.key;
       if (!key) return;
       doVibrate();
-      if (checkBtn.disabled) return;
-      if (/^[0-9]$/.test(key)){
-        // limit: up to 2 digits (1..20)
-        if (inputVal.length >= 2) return;
-        // prevent leading zero
-        if (inputVal === "0") inputVal = key;
-        else inputVal += key;
-        updateDisplay();
-      } else if (key === 'clear'){
-        inputVal = "";
-        updateDisplay();
-        message.textContent = '';
-        if (keypad.style.display === 'none'){
-          keypad.style.display = 'grid';
-          resultBox.style.display = 'none';
-          checkBtn.style.display = 'inline-block';
-        }
-      }
-    });
 
-    function getInputNumber(){
-      if (inputVal.length === 0) return null;
-      const v = parseInt(inputVal, 10);
-      if (isNaN(v)) return null;
-      return v;
-    }
+      // مباشرة التحقق عند الضغط
+      accepting = false;
+      // visually mark selected and disable others
+      keypad.querySelectorAll('.key').forEach(el => el.classList.add('disabled'));
+      k.classList.remove('disabled');
+      k.classList.add('selected');
 
-    checkBtn.addEventListener('click', function(){
-      if (checkBtn.disabled) return;
-      const val = getInputNumber();
-      if (val === null){
-        message.classList.remove('error');
-        message.textContent = 'اكتب الناتج أولاً (من 1 إلى 20).';
-        return;
-      }
-      if (val < 1 || val > 20){
-        message.classList.add('error');
-        message.textContent = 'الرجاء إدخال عدد من 1 إلى 20 فقط.';
-        return;
-      }
+      const val = parseInt(key, 10);
+      if (isNaN(val)) return;
+
+      // تحقق الإجابة
       if (!current) return;
-
       if (val === current.correct){
         score += 1;
         topScore.textContent = 'نقاطك ' + score;
         message.classList.remove('error');
         message.textContent = 'اجابتك صحيحة ✅';
-        checkBtn.disabled = true;
-        keypad.style.pointerEvents = 'none';
-        setTimeout(newQuestion, 900);
+        // عرض الأشرطة الملونة
+        showConfetti();
+        // بعد تأخير صغير نمشي للسؤال التالي
+        setTimeout(newQuestion, 1000);
       } else {
-        keypad.style.display = 'none';
+        // إجابة خاطئة -> إظهار النتيجة (نفس سلوك سابق)
         message.classList.add('error');
         message.textContent = 'الإجابة الصحيحة هي ' + current.correct;
         bigScore.textContent = 'نقاطك ' + score;
         resultBox.style.display = 'flex';
-        checkBtn.style.display = 'none';
+        // إخفاء لوحة الأزرار لمنع الضغطات الإضافية
+        keypad.style.pointerEvents = 'none';
         topScore.style.visibility = 'hidden';
       }
     });
@@ -271,17 +295,14 @@
       topScore.style.visibility = 'visible';
       message.textContent = '';
       resultBox.style.display = 'none';
-      keypad.style.display = 'grid';
-      checkBtn.style.display = 'inline-block';
-      checkBtn.disabled = false;
       keypad.style.pointerEvents = 'auto';
-      inputVal = "";
-      updateDisplay();
+      accepting = true;
+      keypad.querySelectorAll('.key').forEach(k => k.classList.remove('disabled','selected'));
       newQuestion();
       doVibrate();
     });
 
-    // start
+    // تشغيل أول سؤال
     newQuestion();
     document.addEventListener('touchstart', ()=>{}, {passive:true});
   </script>
